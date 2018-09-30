@@ -1,6 +1,9 @@
+# General Neural Net framework
+# Author: John Cooper (ech0r)
+# Date: 9/29/2018
+
 import math
 import numpy as np
-
 
 class NeuralNet:
 
@@ -21,6 +24,7 @@ class NeuralNet:
             self.hidden_weights.append(np.random.randn(self.hidden_size, self.hidden_size))
         self.output_weight = np.random.randn(self.hidden_sizem, self.output_size)
 
+    # TODO: implement more advanced activation functions
     def sigmoid(self, x):
         return math.exp(-np.logaddexp(0, -x))
 
