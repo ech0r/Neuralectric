@@ -8,8 +8,7 @@ import numpy as np
 class NeuralNet:
 
     def __init__(self, input_size, output_size, hidden_size, num_hidden):
-
-        self.num_hidden = num_hidden
+        self.num_hidden = num_hidden - 1
         if self.num_hidden <= 1:
             self.num_hidden = 0
         self.input_size = input_size
@@ -24,7 +23,7 @@ class NeuralNet:
             self.hidden_weights.append(np.random.randn(self.hidden_size, self.hidden_size))
         self.output_weight = np.random.randn(self.hidden_sizem, self.output_size)
 
-    # TODO: implement more advanced activation functions
+    # TODO: implement more advanced activation functions like ReLU
     def sigmoid(self, x):
         return math.exp(-np.logaddexp(0, -x))
 
@@ -42,8 +41,16 @@ class NeuralNet:
         return output
 
     # TODO: write backpropagation function
-    def back_prop(self,):
-        print("do backprop stuff")
+    def back_prop(self, traininginputarray, testoutputarray, outputarray):
+        # subtract NN output from known value
+        error = testoutputarray - outputarray
+        # get activated error
+        error_d = error*self.sigmoid_d(outputarray)
+        # TODO: need to figure out how to correctly adjust n hidden layer's weights
+        for x in self.hidden_weights:
+            x_error = error_d.dot(x.T)
+            x_delta = x_error*self.sigmoid_d()
+
 
     # TODO: write training function
 
