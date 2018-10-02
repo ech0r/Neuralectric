@@ -8,6 +8,8 @@ import numpy as np
 class NeuralNet:
 
     def __init__(self, input_size, output_size, hidden_size, num_hidden):
+        self.z = 0
+        self.activated_z = 0
         self.num_hidden = num_hidden - 1
         if self.num_hidden <= 1:
             self.num_hidden = 0
@@ -21,7 +23,7 @@ class NeuralNet:
         # for each hidden layer - generate weights
         for x in self.num_hidden:
             self.hidden_weights.append(np.random.randn(self.hidden_size, self.hidden_size))
-        self.output_weight = np.random.randn(self.hidden_sizem, self.output_size)
+        self.output_weight = np.random.randn(self.hidden_size, self.output_size)
 
     # TODO: implement more advanced activation functions like ReLU
     def sigmoid(self, x):
@@ -31,13 +33,22 @@ class NeuralNet:
         return x*(1-x)
 
     def feed_forward(self, input):
-        output = np.dot(input, self.input_weights)
-        # first activation past the input layer
-        activated_output = self.sigmoid(output)
-        for x in self.hidden_weights:
-            activated_output = np.dot(activated_output, x)
-        output = np.dot(activated_output, self.output_weights)
-        output = self.sigmoid(output)
+        i = 0
+        for x in (self.num_hidden + 2):
+            if x == 0:  # input layer -> first hidden layer
+                self.z = np.dot(input, self.input_weight)
+                self.activated_z = self.sigmoid(self.z)
+            elif x == (self.num_hidden + 1):  # final hidden layer -> output
+                self.z = np.dot(self.activated_z, self.output_weight)
+                self.activated_z = self.sigmoid(self.z)
+                return self.activated_z
+            else:  # hidden layer -> hidden layer
+                self.z = np.dot(self.activated_z, self.hidden_weights[i])
+                self.activated_z = self.sigmoid(self.z)
+                i += 1
+
+
+
         return output
 
     # TODO: write backpropagation function
