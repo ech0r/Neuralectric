@@ -24,6 +24,19 @@ class NeuralNet:
                 self.weights.append(np.random.rand(hidden_size,hidden_size))
 
     # TODO: implement more advanced activation functions like leaky ReLU
+
+    def relu(self, x):
+        if x < 0:
+            return 0.01*x
+        else:
+            return x
+
+    def relu_d(self, x):
+        if x < 0:
+            return 0.01
+        else:
+            return 1
+
     def sigmoid(self, x):
         return math.exp(-np.logaddexp(0, -x))
 
@@ -33,14 +46,17 @@ class NeuralNet:
     def feed_forward(self, inputarray):
         for i in range(len(self.weights)):
             if i == 0:
-                self.weightedsum.append(np.dot(inputarray,self.weights[i]))
-                self.y.append(self.sigmoid(self.weightedsum[i]))
+                self.weightedsum.append(np.dot(inputarray,self.weights[i]) + self.bias[i])
+                self.y.append(self.relu(self.weightedsum[i]))
             else:
-                self.weightedsum.append(np.dot(self.y[i-1], self.weights[i]))
-                self.y.append(self.sigmoid(self.weightedsum[i]))
+                self.weightedsum.append(np.dot(self.y[i-1], self.weights[i]) + self.bias[i])
+                self.y.append(self.relu(self.weightedsum[i]))
 
     def back_prop(self, trainingdata, expectedoutput):
-        self.delta.append((self.y[-1] - expectedoutput)*self.sigmoid_d(self.weightedsum[-1])*self.y[-2])
+        # get output layer error
+        error = expectedoutput - self.y[-1]
+        
+        self.delta.append((self.y[-1] - expectedoutput)*self.relu_d(self.weightedsum[-1])*self.y[-2])
 
 
 
