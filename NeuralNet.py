@@ -7,21 +7,24 @@ import numpy as np
 
 class NeuralNet:
 
-    def __init__(self, input_size, output_size, hidden_size, num_hidden):
+    def __init__(self, num_input, num_output, hidden_depth, num_hidden):
         # array of outputs through network
         self.y = []
         self.weightedsum = []
         self.delta = []
         # build array of weight matrices
         self.weights = []
-        for i in range(num_hidden):
-            if i == 0:
-                self.weights.append(np.random.rand(input_size, hidden_size))
-            elif i == (num_hidden-1):
-                self.weights.append(np.random.rand(hidden_size, output_size))
+        self.bias = []
+        for i in range(num_hidden + 1):
+            if i == 0:  # first layer - input to hidden
+                self.bias.append(np.zeros((1, hidden_depth),))
+                self.weights.append(np.random.rand(num_input, hidden_depth))
+            elif i == num_hidden:  # last layer - hidden to output
+                self.bias.append(np.zeros((1, num_output),))
+                self.weights.append(np.random.rand(hidden_depth, num_output))
             else:
-                self.weights.append(np.random.rand(hidden_size, hidden_size))
-        self.bias = np.zeros(len(self.weights))
+                self.bias.append(np.zeros((1, hidden_depth),))
+                self.weights.append(np.random.rand(hidden_depth, hidden_depth))
 
     def relu(self, x):
         return np.where(x < 0, 0.01*x, x)
@@ -36,6 +39,7 @@ class NeuralNet:
         return x*(1-x)
 
     def feed_forward(self, inputarray):
+        self.y.append(inputarray)
         for i in range(len(self.weights)):
             if i == 0:
                 self.weightedsum.append(np.dot(inputarray, self.weights[i]) + self.bias[i])
@@ -44,29 +48,18 @@ class NeuralNet:
                 self.weightedsum.append(np.dot(self.y[i-1], self.weights[i]) + self.bias[i])
                 self.y.append(self.relu(self.weightedsum[i]))
 
-    def back_prop(self, input, expectedoutput):
+    def back_prop(self, x, y, o):
         # get output layer error
-        layer_error = []
-        layer_error.append((self.y[-1] - expectedoutput)*self.relu_d(self.weightedsum[-1]))
-        for i in range(len(self.weights)-1):
-            layer_error.append(self.weights[-(i+1)].T*self.relu_d(self.weightedsum[-(i+2)]))
+        self.o_error = y - o
+        self.o_delta = self.o_error*self.relu_d(o)
+        for i,e in reversed(list(enumerate(self.weights))):
+            layer_error = self.o_delta.dot(self.weights[i].T)
+            layer_delta = layer_error*self.relu_d(self.y)
 
-        for i in range(len(self.y)-1):
-            # back at the beginning
-            if i == 0:
-                self.delta.append(layer_error[i]*self.y[-(i+2)])
-            elif i == len(self.y)-1:
-                self.delta.append(layer_error[i-1]*layer_error[i]*input)
-            else:
-                self.delta.append(layer_error[i-1]*layer_error[i]*self.y[-(i+2)])
+    def train(self, x_in, expectedoutput):
+            self.feed_forward(x_in)
+            self.back_prop(x_in, expectedoutput[i])
 
-
-    # TODO: write training function
-    def train(self, input, expectedoutput):
-        self.feed_forward(input)
-        self.back_prop(input, expectedoutput)
-
-    # TODO: write function to save weights after training
     def saveweights(self):
         for i in range(len(self.weights)):
             np.savetxt("w" + i + ".txt", self.weights[i], fmt="%s")
@@ -74,24 +67,21 @@ class NeuralNet:
     def predict(self, input):
         self.feed_forward(input)
 
+    def clear(self):
+        self.y = []
+        self.weightedsum = []
+
 X = np.array([
     0, 0,
     0, 1,
     1, 0,
     1, 1
-]).reshape(4,2)
+]).reshape(4, 2)
 
 Y = np.array([0, 1, 1, 0]).reshape(4, 1)
 NN = NeuralNet(2, 1, 3, 2)
-#print(NN.weights)
-#print(NN.bias)
-for j in range(1000):
-    for x in range(len(X)):
-        NN.train(X, Y)
-
-NN.predict(X[2])
-print(NN.y[-1])
-
+NN.train(X,Y)
+print(NN.weightedsum)
 
 
 
