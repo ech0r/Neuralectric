@@ -51,6 +51,8 @@ class NeuralNet:
             self.layer_output_delta.append(self.layer_output_delta[j]@e.T*self.sigmoid_d(self.layer_outputs[i-1]))
             j += 1
 
+## Can calculate layer deltas, just need to update weights correctly now.  TODO: fix below code
+        
         for i in range(len(self.layer_outputs)):
             if i == 0:
                 z = self.layer_output_delta[i]*self.layer_outputs[i]*x.T
