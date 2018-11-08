@@ -50,15 +50,22 @@ class NeuralNet:
         for i, e in reversed(list(enumerate(self.weights))):
             self.layer_output_delta.append(self.layer_output_delta[j]@e.T*self.sigmoid_d(self.layer_outputs[i-1]))
             j += 1
+        self.layer_output_delta.reverse()
+        for i in range(len(self.weights)):
+            self.layer_output_delta[i].shape = (-1, 1)
+            self.layer_outputs[i].shape = (-1, 1)
+            if i == 0:
+                print(self.weights[i].shape)
+                print(x.shape)
+                print(self.layer_output_delta[i].shape)
+                #self.weights[i] += self.layer_output_delta[i]*x.T
+            else:
+                self.weights[i] += self.layer_output_delta[i]*self.layer_outputs[i].T
+
 
 ## Can calculate layer deltas, just need to update weights correctly now.  TODO: fix below code
-        
-        for i in range(len(self.layer_outputs)):
-            if i == 0:
-                z = self.layer_output_delta[i]*self.layer_outputs[i]*x.T
-            else:
-                z = self.layer_output_delta[i]*self.layer_outputs[i]*self.layer_outputs[i]
-            print(z)
+
+
 
 Net = NeuralNet(2, 1, 3, 2)
 
@@ -66,3 +73,4 @@ Net.feed_forward(x[0])
 Net.back_prop(x[0], y[0])
 print(Net.layer_outputs)
 print(Net.layer_output_delta)
+print(Net.weights)
