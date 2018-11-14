@@ -1,17 +1,17 @@
 import numpy as np
-import math
-import pandas
 
-x = np.array(([0, 0], [0, 1], [1, 0], [1, 1]),)
-y = np.array(([0], [1], [1], [0]),)
+X = np.array(([0, 0], [0, 1], [1, 0], [1, 1]),)
+Y = np.array(([0], [1], [1], [0]),)
 
 class NeuralNet:
 
-    def __init__(self, input_size, output_size, hidden_layer_size, num_hidden):
+    def __init__(self, input_size, output_size, hidden_layer_size, num_hidden, switch=None):
+        self.switch = switch
         self.layer_outputs = []
         self.layer_output_delta = []
+        self.weightedsum = []
         self.weights = []
-        self.learningrate = 0.01
+        self.learningrate = 0.1
         for i in range(num_hidden + 1):
             if i == 0:
                 self.weights.append(np.random.rand(input_size, hidden_layer_size))
@@ -32,45 +32,51 @@ class NeuralNet:
     def sigmoid_d(self, x):
         return x*(1-x)
 
+    def act(self, x):
+        if self.switch == "relu":
+            return self.relu(x)
+        else:
+            return self.sigmoid(x)
+
+    def act_d(self, x):
+        if self.switch == "relu":
+            return self.relu_d(x)
+        else:
+            return self.sigmoid_d(x)
+
     def clear(self):
         self.layer_outputs = []
+        self.weightedsum = []
+        self.layer_output_delta = []
 
     def feed_forward(self, x):
-        for i, e in enumerate(list(self.weights)):
-            if i == 0:
-                self.layer_outputs.append(self.sigmoid(np.dot(x, self.weights[i])))
-            else:
-                self.layer_outputs.append(self.sigmoid(np.dot(self.layer_outputs[i-1], self.weights[i])))
+        self.layer_outputs.append(np.atleast_2d(x))
+        self.weightedsum.append(np.atleast_2d(x))
+        for z, e in enumerate(list(self.weights)):
+            self.weightedsum.append(np.atleast_2d(self.layer_outputs[z]@self.weights[z]))
+            self.layer_outputs.append(np.atleast_2d(self.act(self.weightedsum[-1])))
 
     def back_prop(self, x, y):
-        error = y - self.layer_outputs[-1]
-        error_delta = error*self.sigmoid_d(self.layer_outputs[-1])
-        self.layer_output_delta.append(error_delta)
-        j = 0
-        for i, e in reversed(list(enumerate(self.weights))):
-            self.layer_output_delta.append(self.layer_output_delta[j]@e.T*self.sigmoid_d(self.layer_outputs[i-1]))
-            j += 1
-        self.layer_output_delta.reverse()
-        for i in range(len(self.weights)):
-            self.layer_output_delta[i].shape = (-1, 1)
-            self.layer_outputs[i].shape = (-1, 1)
-            if i == 0:
-                print(self.weights[i].shape)
-                print(x.shape)
-                print(self.layer_output_delta[i].shape)
-                #self.weights[i] += self.layer_output_delta[i]*x.T
+        error = np.atleast_2d(y - self.layer_outputs[-1])
+        error_delta = np.atleast_2d(error*self.act_d(self.weightedsum[-1]))
+        for z, e in enumerate(reversed(list(self.weights))):
+            if z == 0:
+                self.layer_output_delta.append(error_delta)
             else:
-                self.weights[i] += self.layer_output_delta[i]*self.layer_outputs[i].T
+                self.layer_output_delta.append(self.layer_output_delta[z-1]@self.weights[-z].T*self.act_d(self.weightedsum[-(z+1)]))
+        self.layer_output_delta.reverse()
+        for k in range(len(self.weights)):
+            self.weights[k] -= self.learningrate*self.layer_outputs[k].T@self.layer_output_delta[k]
+
+Net = NeuralNet(2, 1, 2, 1)
 
 
-## Can calculate layer deltas, just need to update weights correctly now.  TODO: fix below code
+for i in range(100):
+    Net.feed_forward(np.atleast_2d(X))
+    Net.back_prop(np.atleast_2d(X), np.atleast_2d(Y))
+    for h in Net.layer_outputs:
+        print(h.shape)
+    Net.clear()
 
-
-
-Net = NeuralNet(2, 1, 3, 2)
-
-Net.feed_forward(x[0])
-Net.back_prop(x[0], y[0])
-print(Net.layer_outputs)
-print(Net.layer_output_delta)
-print(Net.weights)
+Net.feed_forward(np.atleast_2d(X))
+print(Net.layer_outputs[-1])
