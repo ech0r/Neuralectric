@@ -5,20 +5,27 @@ Y = np.array(([0], [1], [1], [0]),)
 
 class NeuralNet:
 
-    def __init__(self, input_size, output_size, hidden_layer_size, num_hidden, switch=None):
+    def __init__(self, hidden_layer_size, num_hidden, switch=None):
         self.switch = switch
         self.layer_outputs = []
         self.layer_output_delta = []
         self.weightedsum = []
         self.weights = []
-        self.learningrate = 0.001
+        self.bias = []
+        self.num_hidden = num_hidden
+        self.learningrate = 0.01
+
+    # initialize weights to input dimensions
+    def initialize_weights(self, X, Y):
+        input_size = X.shape
+        output_size = Y.shape
         for i in range(num_hidden + 1):
             if i == 0:
-                self.weights.append(np.random.rand(input_size, hidden_layer_size))
+                self.weights.append(np.random.uniform(low=0.0, high=1.0, size=(input_size, hidden_layer_size)))
             elif i == num_hidden:
-                self.weights.append(np.random.rand(hidden_layer_size, output_size))
+                self.weights.append(np.random.uniform(low=0.0, high=1.0, size=(hidden_layer_size, output_size)))
             else:
-                self.weights.append(np.random.randn(hidden_layer_size, hidden_layer_size))
+                self.weights.append(np.random.uniform(low=0.0, high=1.0, size=(hidden_layer_size, hidden_layer_size)))
 
     def relu(self, x):
         return np.where(x < 0, 0.01*x, x)
@@ -60,7 +67,7 @@ class NeuralNet:
         self.layer_output_delta = []
 
     def feed_forward(self, x):
-        self.layer_outputs.append(np.atleast_2d(x))
+        self.layer_outputs.append(self.act(np.atleast_2d(x)))
         self.weightedsum.append(np.atleast_2d(x))
         for z, e in enumerate(list(self.weights)):
             self.weightedsum.append(np.atleast_2d(self.layer_outputs[z]@self.weights[z]))
@@ -79,17 +86,27 @@ class NeuralNet:
             buffer = self.weights[k]
             delta = self.learningrate*self.layer_outputs[k].T@self.layer_output_delta[k]
             self.weights[k] = np.subtract(self.weights[k], delta)
-            print(np.subtract(buffer, self.weights[k]))
 
 
+Net = NeuralNet(3, 2, "relu")
 
-Net = NeuralNet(2, 1, 2, 1, "tanh")
 
-
-for i in range(1000):
+'''
+for i in range(1):
     Net.feed_forward(np.atleast_2d(X))
     Net.back_prop(np.atleast_2d(X), np.atleast_2d(Y))
+    print("--WeightedSum--")
+    for j in Net.weightedsum:
+        print(j.shape)
+    print("-----Deltas----")
+    for k in Net.layer_output_delta:
+        print(k.shape)
+    print("----Weights----")
+    for l in Net.weights:
+        print(l.shape)
     Net.clear()
 
 Net.feed_forward(np.atleast_2d(X))
 print(Net.layer_outputs[-1])
+
+'''
