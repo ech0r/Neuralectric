@@ -90,7 +90,7 @@ class NeuralNet:
             self.weights[k] = np.subtract(self.weights[k], delta)
 
 
-Net = NeuralNet(3, 2, "tanh")
+Net = NeuralNet(4, 8, "tanh")
 Net.initialize_weights(X, Y)
 
 for i in range(1000):
