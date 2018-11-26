@@ -6,6 +6,8 @@ Y = np.array(([0], [1], [1], [0]),)
 class NeuralNet:
 
     def __init__(self, hidden_layer_size, num_hidden, switch=None):
+        self.hidden_layer_size = hidden_layer_size
+        self.num_hidden = num_hidden
         self.switch = switch
         self.layer_outputs = []
         self.layer_output_delta = []
@@ -16,16 +18,16 @@ class NeuralNet:
         self.learningrate = 0.01
 
     # initialize weights to input dimensions
-    def initialize_weights(self, X, Y):
-        input_size = X.shape
-        output_size = Y.shape
-        for i in range(num_hidden + 1):
+    def initialize_weights(self, x, y):
+        input_size = x.shape[1]
+        output_size = y.shape[1]
+        for i in range(self.num_hidden + 1):
             if i == 0:
-                self.weights.append(np.random.uniform(low=0.0, high=1.0, size=(input_size, hidden_layer_size)))
-            elif i == num_hidden:
-                self.weights.append(np.random.uniform(low=0.0, high=1.0, size=(hidden_layer_size, output_size)))
+                self.weights.append(np.random.uniform(low=0.0, high=1.0, size=(input_size, self.hidden_layer_size)))
+            elif i == self.num_hidden:
+                self.weights.append(np.random.uniform(low=0.0, high=1.0, size=(self.hidden_layer_size, output_size)))
             else:
-                self.weights.append(np.random.uniform(low=0.0, high=1.0, size=(hidden_layer_size, hidden_layer_size)))
+                self.weights.append(np.random.uniform(low=0.0, high=1.0, size=(self.hidden_layer_size, self.hidden_layer_size)))
 
     def relu(self, x):
         return np.where(x < 0, 0.01*x, x)
@@ -88,25 +90,14 @@ class NeuralNet:
             self.weights[k] = np.subtract(self.weights[k], delta)
 
 
-Net = NeuralNet(3, 2, "relu")
+Net = NeuralNet(3, 2, "tanh")
+Net.initialize_weights(X, Y)
 
-
-'''
-for i in range(1):
+for i in range(1000):
     Net.feed_forward(np.atleast_2d(X))
     Net.back_prop(np.atleast_2d(X), np.atleast_2d(Y))
-    print("--WeightedSum--")
-    for j in Net.weightedsum:
-        print(j.shape)
-    print("-----Deltas----")
-    for k in Net.layer_output_delta:
-        print(k.shape)
-    print("----Weights----")
-    for l in Net.weights:
-        print(l.shape)
     Net.clear()
 
 Net.feed_forward(np.atleast_2d(X))
 print(Net.layer_outputs[-1])
 
-'''
