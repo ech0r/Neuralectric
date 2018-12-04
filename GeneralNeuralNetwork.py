@@ -1,12 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-X = np.array(([0, 0], [0, 1], [1, 0], [1, 1]),)
+#X = np.array(([0, 0], [0, 1], [1, 0], [1, 1]),)
 #Y = np.array(([0], [1], [1], [0]),)
-Y = np.array([0, 1, 1, 0])
+#Y = np.array([0, 1, 1, 0])
 
-import warnings
-warnings.filterwarnings('ignore')
 
 class NeuralNet():
     def __init__(self, network_architecture, switch=None):
@@ -16,7 +14,8 @@ class NeuralNet():
         self.num_layers = len(network_architecture)
         self.architecture = network_architecture
         self.weights = []
-
+        self.error = 0.0
+        self.errorlist = []
         # initialize weight values
         for layer in range(self.num_layers - 1):
             weight = 2*np.random.rand(network_architecture[layer] + 1, network_architecture[layer+1]) - 1
@@ -32,7 +31,7 @@ class NeuralNet():
         return 1 / (1 + np.exp(-x))
 
     def sigmoid_d(self, x):
-        return x * (1.0 - x)
+        return np.multiply(x, 1.0-x)
 
     def tanh(self, x):
         return (1.0 - np.exp(-2 * x)) / (1.0 + np.exp(-2 * x))
@@ -70,20 +69,10 @@ class NeuralNet():
         y.append(layer_output)
         return y
 
-        # old code
-        '''
-        #forward propagation through our network
-        self.z = np.dot(X, self.W1) # dot product of X (input) and first set of 3x2 weights
-        self.z2 = self.act(self.z) # activation function
-        self.z3 = np.dot(self.z2, self.W2) # dot product of hidden layer (z2) and second set of 3x1 weights
-        o = self.act(self.z3) # final activation function
-        return o
-        '''
-
     def backward(self, y, known, learning_rate):
         error = known - y[-1]
         error_delta = [error * self.act_d(y[-1])]
-
+        self.error = error
         # starting from 2nd to last layer
         for i in range(self.num_layers-2, 0, -1):
             error = error_delta[-1].dot(self.weights[i][1:].T)
@@ -97,19 +86,6 @@ class NeuralNet():
             delta = error_delta[i].reshape(1, self.architecture[i+1])
             self.weights[i] += learning_rate*layer.T.dot(delta)
 
-        # old code
-        '''
-        # backward propagate through the network
-        self.o_error = y - o  # error in output
-        self.o_delta = self.o_error*self.act_d(o)  # applying derivative of sigmoid to error
-
-        self.z2_error = self.o_delta@self.W2.T  # z2 error: how much our hidden layer weights contributed to output error
-        self.z2_delta = self.z2_error*self.act_d(self.z2)  # applying derivative of sigmoid to z2 error
-
-        self.W1 += X.T@self.z2_delta  # adjusting first set (input --> hidden) weights
-        self.W2 += self.z2.T@self.o_delta  # adjusting second set (hidden --> output) weights
-        '''
-
     def train(self, data, labels, learning_rate=0.1, epochs=10000):
         # add bias to input layer - always on
         ones = np.ones((1, data.shape[0]))
@@ -117,7 +93,6 @@ class NeuralNet():
         for k in range(epochs):
             if (k+1) % 10000 == 0:
                 print('epochs: {}'.format(k+1))
-
             sample = np.random.randint(X.shape[0])
             # feed data forward through our network
             x = [z[sample]]
@@ -125,17 +100,10 @@ class NeuralNet():
 
             known = labels[sample]
             self.backward(y, known, learning_rate)
-
-        # old code
-        '''
-        o = self.forward(X)
-        self.backward(X, y, o)
-        return self.o_error
-        '''
+            self.errorlist.append(self.error)
 
     def saveWeights(self):
-        np.savetxt("w1.txt", self.W1, fmt="%s")
-        np.savetxt("w2.txt", self.W2, fmt="%s")
+        print("save weights")
 
     def predict(self, x):
         result = np.concatenate((np.ones(1).T, np.array(x)))
@@ -144,18 +112,42 @@ class NeuralNet():
             result = np.concatenate((np.ones(1).T, np.array(result)))
         return result[1]
 
-        # old code
-        '''
-        print("Predicted data based on trained weights, 5000 training iterations: ")
-        print("Input: \n" + str(X))
-        print("Output: \n" + str(self.forward(X)))
-        '''
+
+
 
 np.random.seed(0)
 
-NN = NeuralNet([2, 2, 1], "relu")
-NN.train(X, Y, learning_rate=0.1, epochs=350)
+NN = NeuralNet([6, 4, 1], "relu")
+
+data = np.genfromtxt('load.csv', delimiter=',', skip_header=True)
+X = data[:, :-1]
+Y = data.T[-1]
+# get maximum of Y and normalize Y - load numbers are too large
+max = np.amax(Y)
+Y = Y/max
+
+NN.train(X, Y, learning_rate=0.01, epochs=1000000)
+
+
+data = np.genfromtxt('test.csv', delimiter=',', skip_header=True)
+input = data[:, :-1]
+output = data.T[-1]
 
 print("Final prediction")
-for s in X:
-    print(s, NN.predict(s))
+totalerror = 0
+hours = []
+predicted_output = []
+count = 0
+for i in range(len(input)):
+    count += 1
+    hours.append(count)
+    predicted = NN.predict(input[i])*max
+    predicted_output.append(predicted)
+    totalerror += (abs(output[i]-predicted)/output[i])*100
+    #print(output[i], predicted, (abs(output[i]-predicted)/output[i])*100)
+print("Average error", totalerror/len(input))
+
+plt.plot(hours, output)
+plt.plot(hours, predicted_output)
+plt.show()
+
