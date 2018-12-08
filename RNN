@@ -1,0 +1,145 @@
+
+# Multilayer Perceptron to Predict Load Demand and renewable generation
+import numpy
+import matplotlib.pyplot as plt
+from pandas import read_csv
+import math
+from keras.models import Sequential
+from keras.layers import Dense
+
+
+# convert an array of values into a dataset matrix
+def create_dataset(dataset, look_back=1):
+	dataX, dataY = [], []
+	for i in range(len(dataset ) -look_back -1):
+		a = dataset[i:( i +look_back), 0]
+		dataX.append(a)
+		dataY.append(dataset[i + look_back, 0])
+	return numpy.array(dataX), numpy.array(dataY)
+
+# fix random seed for reproducibility
+numpy.random.seed(7)
+# load the dataset
+
+dataframe = read_csv('ai_data_test8.csv', usecols=[1], engine='python', skipfooter=2)
+dataset = dataframe.values
+dataset = dataset.astype('float32')
+# split into train and test sets
+train_size = int(len(dataset) * .75)
+test_size = len(dataset) - train_size
+train, test = dataset[0:train_size ,:], dataset[train_size:len(dataset) ,:]
+# reshape dataset
+look_back = 1
+trainX, trainY = create_dataset(train, look_back)
+testX, testY = create_dataset(test, look_back)
+
+#totalX, totalY = create_dataset(dataset, look_back)
+#totalY = create_dataset(dataset, look_back)
+
+# create and fit Multilayer Perceptron model
+print (dataset.shape)
+print (testX.shape)
+print (testY.shape)
+model = Sequential()
+model.add(Dense(32, input_dim=look_back, activation='relu'))
+model.add(Dense(24, activation='relu'))
+model.add(Dense(1))
+model.compile(loss='mean_squared_error', optimizer='adam', metrics=['accuracy'])
+history = model.fit(trainX,trainY, validation_split=0.33, epochs=1, batch_size=5, verbose=0)
+
+
+# Estimate model performance
+trainScore = model.evaluate(trainX, trainY, verbose=0)
+print('Train Score: %.2f MSE (%.2f RMSE)' % (trainScore[0], math.sqrt(trainScore[0])))
+testScore = model.evaluate(testX, testY, verbose=0)
+print('Test Score: %.2f MSE (%.2f RMSE)' % (testScore[0], math.sqrt(testScore[0])))
+
+# generate predictions for training
+trainPredict = model.predict(trainX)
+testPredict = model.predict(testX)
+# shift train predictions for plotting
+trainPredictPlot = numpy.empty_like(dataset)
+trainPredictPlot[:, :] = numpy.nan
+trainPredictPlot[look_back:len(trainPredict ) +look_back, :] = trainPredict
+# shift test predictions for plotting
+testPredictPlot = numpy.empty_like(dataset)
+testPredictPlot[:, :] = numpy.nan
+testPredictPlot[len(trainPredict ) +(look_back *2 ) +1:len(dataset ) -1, :] = testPredict
+
+
+#print ('accuracy %.3f' % accuracy)
+
+#history = model.fit(trainX, trainY, validation_split=0.33, epochs=10, batch_size=10, verbose=0)
+# list all d#ata in history
+# plot baseline and predictions
+print(history.history.keys())
+
+#predictions = model.predict(testX)
+# round predictions
+rounded = [round(x[0]) for x in testPredict]
+print(rounded)
+expected = [round(x[0]) for x in testX]
+print(expected)
+print(testPredict.shape)
+#print(dataset)
+
+
+# summarize history for accuracy
+x = len(testPredict)
+i = 0
+while i < x:
+	accuracy = (abs((trainPredict[i]-trainY[i])/trainY[i]))
+	accuracy = accuracy.astype('float32')
+	difference = 1.0
+	accuracy = (difference - accuracy) * 100
+	print ('Accuracy: %.3f%%' % accuracy)
+	#print (testX[i])
+	i= i+1
+	#plt.plot(accuracy)
+
+
+plt.plot(history.history['acc'])
+plt.plot(history.history['val_acc'])
+plt.title('model accuracy')
+plt.ylabel('accuracy')
+plt.xlabel('epoch')
+plt.legend(['train', 'test'], loc='upper left')
+plt.show()
+# summarize history for loss
+plt.plot(history.history['loss'])
+plt.plot(history.history['val_loss'])
+plt.title('model loss')
+plt.ylabel('loss')
+plt.xlabel('epoch')
+plt.legend(['train', 'test'], loc='upper left')
+plt.show()
+#
+#plt.plot(dataset, color='red')
+#plt.show()
+plt.plot(testX, color='blue')
+plt.plot(testPredict, color='red')
+
+#plt.xlabel('hours')
+#plt.legend(['predicted', 'expected'], loc='upper left')
+#plt.plot('accuracy', )
+#plt.scatter(trainX,testX)
+#plt.show()
+
+#plt.plot(accuracy)
+#plt.show()
+
+plt.title('RNN for Forecasting Load Demand')
+plt.ylabel('Load Demand (Megawatts)')
+plt.xlabel('Hours')
+plt.legend(['Expected', 'Predicted'], loc='upper left')
+plt.show()
+
+plt.plot(dataset, color='orange')
+plt.plot(trainPredictPlot, color= 'blue')
+plt.plot(testPredictPlot, color='red')
+
+plt.title('Training and Testing Prediction results')
+plt.ylabel('Load Demand (Megawatts)')
+plt.xlabel('Hours')
+plt.legend(['Actual Data', 'Training Data', 'Test Data'], loc='upper left')
+plt.show()
